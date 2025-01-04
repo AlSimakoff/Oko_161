@@ -1,6 +1,7 @@
 from datetime import time
 import cv2
-from object_detection.detect_car_YOLO import ObjectDetection
+
+from detection_YOLOv11 import tracking
 import settings
 from lpr_net.model.lpr_net import build_lprnet
 from lpr_net.rec_plate import rec_plate, CHARS
@@ -63,11 +64,13 @@ def get_boxes(results, frame):
             int(row[3] * y_shape),
         )
 
-        if labels[i] == 0:
+        if labels[i] == 2:
             numbers.append((x1, y1, x2, y2))
-        elif labels[i] == 1:
-            cars.append((x1, y1, x2, y2))
+        #elif labels[i] == 1:
         elif labels[i] == 2:
+            cars.append((x1, y1, x2, y2))
+        # elif labels[i] == 2:
+        elif labels[i] == 7:
             trucks.append((x1, y1, x2, y2))
         elif labels[i] == 3:
             buses.append((x1, y1, x2, y2))
@@ -161,12 +164,12 @@ def main(
     ):
 
     cv2.startWindowThread()
-    detector = ObjectDetection(
-        yolo_model_path,
-        conf=yolo_conf,
-        iou=yolo_iou,
-        device = device
-        )
+    #detector = ObjectDetection(
+    #    yolo_model_path,
+    #    conf=yolo_conf,
+    #    iou=yolo_iou,
+    #    device = device
+    #    )
     LPRnet = build_lprnet(
         lpr_max_len=lpr_max_len,
         phase=False,
@@ -180,7 +183,8 @@ def main(
     for raw_frame in get_frames(video_file_path):
 
         proc_frame = preprocess(raw_frame, (640, 480))
-        results = detector.score_frame(proc_frame)
+        results = tracking.recognise(proc_frame)
+        #results = detector.score_frame(proc_frame)
         #results = detector.score_frame(raw_frame)
         labls_cords = get_boxes(results, raw_frame)
         new_cars = check_numbers_overlaps(labls_cords)
