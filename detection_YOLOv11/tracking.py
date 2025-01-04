@@ -1,6 +1,7 @@
 from ultralytics import YOLO
 import cv2
-model = YOLO("detection_YOLOv11/yolo11n.pt")
+model_car = YOLO("detection_YOLOv11/best.pt")
+model_plate = YOLO("detection_YOLOv11/best.pt")
 
 def fullrecognise():
     video_path= "../data/video_test/Blog_05_20241228_08.36.22-08.36.35.h264"
@@ -28,7 +29,8 @@ def recognise (frame):
     results = model.track(
         frame,
         persist=True,
-    classes = [2,7])
+        classes = [2,7]
+    )
 
     cords = results[0].boxes.xyxyn
     labls = results[0].boxes.cls
