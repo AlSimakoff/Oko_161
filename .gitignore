@@ -1,3 +1,4 @@
 /.venv/
 /data/
 /yolo11n.pt
+/colour_detection/training_dataset/
