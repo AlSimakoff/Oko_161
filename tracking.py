@@ -1,6 +1,6 @@
 from ultralytics import YOLO
 import cv2
-model = YOLO("yolo11n.pt")
+model = YOLO("runs/detect/yolov11s_carPlate3/weights/best.pt")
 
 video_path="data/video_test/Blog_05_20241228_08.36.22-08.36.35.h264"
 cap=cv2.VideoCapture(video_path)
@@ -11,7 +11,7 @@ while cap.isOpened():
     if success:
         results = model.track(
             frame,
-            persist=True, classes=7)
+            persist=True)
 
         annotaded_frame = results[0].plot()
         cv2.imshow("Yolo11 Tracking", annotaded_frame)
