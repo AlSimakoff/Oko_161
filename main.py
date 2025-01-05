@@ -64,15 +64,15 @@ def get_boxes(results, frame):
             int(row[3] * y_shape),
         )
 
-        if labels[i] == 2:
+        if labels[i] == 3:
             numbers.append((x1, y1, x2, y2))
         #elif labels[i] == 1:
         elif labels[i] == 2:
             cars.append((x1, y1, x2, y2))
         # elif labels[i] == 2:
-        elif labels[i] == 7:
+        elif labels[i] == 4:
             trucks.append((x1, y1, x2, y2))
-        elif labels[i] == 3:
+        elif labels[i] == 1:
             buses.append((x1, y1, x2, y2))
 
     labls_cords["numbers"] = numbers

@@ -6,7 +6,7 @@ DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 FILE_PATH = os.environ.get(
     'file_path', 
-    os.path.normpath("data/video_test/test.mp4")
+    os.path.normpath("data/video_test/test_truck.mp4")
 )
 YOLO_MODEL_PATH = os.environ.get(
     'yolo_model', 
