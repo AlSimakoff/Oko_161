@@ -10,7 +10,7 @@ FILE_PATH = os.environ.get(
 )
 YOLO_MODEL_PATH = os.environ.get(
     'yolo_model', 
-    os.path.normpath("object_detection/YOLOS_cars.pt")
+    os.path.normpath("detection_YOLOv11/Yolov11n_CarTruckPlate.pt")
 )
 LPR_MODEL_PATH = os.environ.get(
     'lpr_model', 
