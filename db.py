@@ -1,7 +1,6 @@
 import sqlite3
 import os
 
-from data.dataset.CarTruckBikePlate.train import results
 
 
 def execute_query(database, query, values=None):
