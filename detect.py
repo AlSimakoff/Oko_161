@@ -1,4 +1,5 @@
-from datetime import time
+from datetime import datetime
+import time
 import cv2
 
 from detection_YOLOv11 import tracking
@@ -106,11 +107,11 @@ def plot_boxes(cars_list: list, frame: np.ndarray) -> np.ndarray:
         car_type = car[2]
 
         x1_number, y1_number, x2_number, y2_number = car[0][0]
-        number = car[0][1]
+        number = car[0][1]+"_"+car[3]
 
         x1_car, y1_car, x2_car, y2_car = car[1][0]
         colour = car[1][1]
-
+        car_bgr=(0,0,0)
         if car_type == "car":
             car_bgr = (0, 0, 255)
         elif car_type == "truck":
@@ -151,6 +152,9 @@ def plot_boxes(cars_list: list, frame: np.ndarray) -> np.ndarray:
     cv2.rectangle(frame, detection_area[0], detection_area[1], (0, 0, 0), 2)
 
     return frame
+def db_entry(time_detect, lic_number, color, type_auto):
+    db_entry_row = (time_detect,lic_number,color,type_auto)
+    print(db_entry_row)
 
 def detect(
     video_file_path,
@@ -181,9 +185,10 @@ def detect(
     LPRnet.load_state_dict(
         torch.load(lpr_model_path,map_location=torch.device('cpu'))
     )
+    last_number = ""
     for raw_frame in get_frames(video_file_path):
 
-        proc_frame = preprocess(raw_frame, (640, 480))
+        proc_frame = preprocess(raw_frame, settings.FINAL_FRAME_RES)
         results = tracking.recognise(yolo_model_path, proc_frame)
         #results = detector.score_frame(proc_frame)
         #results = detector.score_frame(raw_frame)
@@ -198,8 +203,8 @@ def detect(
             plate_coords = car[0]
             car_coords = car[1]
 
-            #if check_roi(plate_coords):
-            if True:
+            if check_roi(plate_coords):
+            #if True:
                 x1_car, y1_car = car_coords[0], car_coords[1]
                 x2_car, y2_car = car_coords[2], car_coords[3]
 
@@ -222,14 +227,22 @@ def detect(
                             is None
                 ):
 
-                    car[0] = [plate_coords, plate_text + "_OK"]
-
+                    car[0] = [plate_coords, plate_text]
+                    car.append("OK")
+                    #Added entry to db
+                    #db_entry = (str(datetime.now().strftime('%Y-%m-%d %H:%M:%S')), car[0][1], car[1][1], car[2])
+                    #print(db_entry)
                 else:
 
-                    car[0] = [plate_coords, plate_text + "_NOK"]
+                    car[0] = [plate_coords, plate_text]
+                    car.append("NOK")
 
                 cars.append(car)
 
+        for car in cars:
+            if car[0][1]!=last_number and car[3]=="OK":
+                db_entry(str(datetime.now().strftime('%Y-%m-%d %H:%M:%S')), car[0][1], car[1][1], car[2])
+                last_number=car[0][1]
         drawn_frame = plot_boxes(cars, raw_frame)
         proc_frame = preprocess(drawn_frame, settings.FINAL_FRAME_RES)
 

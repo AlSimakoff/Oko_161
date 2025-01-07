@@ -18,14 +18,16 @@ def check_numbers_overlaps(labls_cords: dict) -> list:
     new_cars = []
 
     for number in labls_cords["numbers"]:
-
+        added = False
         for car in labls_cords["cars"]:
 
             # check if number's bounding box fully overlaps car's
             if (car[0] <= number[0] <= number[2] <= car[2]) and (
                 car[1] <= number[1] <= number[3] <= car[3]
             ):
-                new_cars.append([number, car, "car"])
+                if not added:
+                    new_cars.append([number, car, "car"])
+            break
 
         for car in labls_cords["trucks"]:
 
@@ -33,7 +35,9 @@ def check_numbers_overlaps(labls_cords: dict) -> list:
             if (car[0] <= number[0] <= number[2] <= car[2]) and (
                 car[1] <= number[1] <= number[3] <= car[3]
             ):
-                new_cars.append([number, car, "truck"])
+                if not added:
+                    new_cars.append([number, car, "truck"])
+            break
 
         for car in labls_cords["busses"]:
 
@@ -41,7 +45,10 @@ def check_numbers_overlaps(labls_cords: dict) -> list:
             if (car[0] <= number[0] <= number[2] <= car[2]) and (
                 car[1] <= number[1] <= number[3] <= car[3]
             ):
-                new_cars.append([number, car, "bus"])
+                if not added:
+                    new_cars.append([number, car, "bus"])
+            break
+
 
     return new_cars
 
