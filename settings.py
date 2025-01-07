@@ -24,3 +24,5 @@ LPR_DROPOUT = 0
 
 FINAL_FRAME_RES = (640, 480)
 DETECTION_AREA = [(0, 0), (1920, 1000)]
+
+database_path='data/database/oko161.db'

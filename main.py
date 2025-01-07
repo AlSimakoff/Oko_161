@@ -1,5 +1,10 @@
 import settings
 from detect import detect
+import db
+from db import add_entry
+
+def main(database):
+    db.initiate(database)
 
 if __name__ == "__main__":
     detect(
@@ -10,6 +15,7 @@ if __name__ == "__main__":
         settings.LPR_MODEL_PATH,
         settings.LPR_MAX_LEN,
         settings.LPR_DROPOUT,
-        settings.DEVICE
+        settings.DEVICE,
+        settings.database_path
     )
 
