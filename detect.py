@@ -156,6 +156,7 @@ def plot_boxes(cars_list: list, frame: np.ndarray) -> np.ndarray:
     return frame
 def db_entry(time_detect, lic_number, color, type_auto):
     db_entry_row = {"time":time_detect,"license_number":lic_number, "color":color,"type_auto":type_auto}
+    print(db_entry_row)
     db.add_entry(settings.database_path, "Journal", db_entry_row)
     client.add_blog(db_entry_row)
 
