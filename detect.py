@@ -10,6 +10,7 @@ import torch
 from track_logic import *
 import numpy as np
 from colour_detection.detect_color import detect_color
+import db
 
 def preprocess(image: np.ndarray, size: tuple) -> np.ndarray:
     """
@@ -153,8 +154,8 @@ def plot_boxes(cars_list: list, frame: np.ndarray) -> np.ndarray:
 
     return frame
 def db_entry(time_detect, lic_number, color, type_auto):
-    db_entry_row = (time_detect,lic_number,color,type_auto)
-    print(db_entry_row)
+    db_entry_row = {"time":time_detect,"license_number":lic_number, "color":color,"type_auto":type_auto}
+    db.add_entry(settings.database_path, "Journal", db_entry_row)
 
 def detect(
     video_file_path,

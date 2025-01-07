@@ -3,11 +3,33 @@ from detect import detect
 import db
 from db import add_entry
 
-def main(database):
+def main(video_file_path,
+         yolo_model_path,
+         yolo_conf,
+         yolo_iou,
+         lpr_model_path,
+         lpr_max_len,
+         lpr_dropout_rate,
+         device,
+         database
+         ):
+
     db.initiate(database)
+    res=db.select_data(database,"Journal")
+    print(res)
+    detect(
+        video_file_path,
+        yolo_model_path,
+        yolo_conf,
+        yolo_iou,
+        lpr_model_path,
+        lpr_max_len,
+        lpr_dropout_rate,
+        device
+    )
 
 if __name__ == "__main__":
-    detect(
+    main(
         settings.FILE_PATH,
         settings.YOLO_MODEL_PATH,
         settings.YOLO_CONF,

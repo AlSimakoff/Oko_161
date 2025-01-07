@@ -56,8 +56,8 @@ def add_entry(db:str, table :str, row :dict[str,str]):
     sql_query=""
     values=()
     if table=="Journal":
-        sql_query="INSERT INTO Journal (time, color, license_number, type_auto) VALUES (?, ?, ?, ?)"
-        values= (row['time'],row['color'],row['license_number'],row['type_auto'])
+        sql_query="INSERT INTO Journal (time, license_number, color, type_auto) VALUES (?, ?, ?, ?)"
+        values= (row['time'],row['license_number'],row['color'], row['type_auto'])
     elif table=="Error":
         sql_query = "INSERT INTO Error (time, log) VALUES (?, ?)"
         values = (row['time'], row['log'])
