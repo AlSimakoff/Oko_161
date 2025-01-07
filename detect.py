@@ -2,6 +2,7 @@ from datetime import datetime
 import time
 import cv2
 
+import client
 from detection_YOLOv11 import tracking
 import settings
 from lpr_net.model.lpr_net import build_lprnet
@@ -156,6 +157,7 @@ def plot_boxes(cars_list: list, frame: np.ndarray) -> np.ndarray:
 def db_entry(time_detect, lic_number, color, type_auto):
     db_entry_row = {"time":time_detect,"license_number":lic_number, "color":color,"type_auto":type_auto}
     db.add_entry(settings.database_path, "Journal", db_entry_row)
+    client.add_blog(db_entry_row)
 
 def detect(
     video_file_path,

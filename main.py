@@ -15,14 +15,14 @@ def main(video_file_path,
          ):
 
     db.initiate(database)
-    res=db.select_data(database,"Journal")
-    print(res)
+    '''
     # Пример добавления пользователей
-    client.add_blog("07.01.2025 0:02", "red", "A424YE161","truck")
+    client.add_blog("07.01.2025 0:02", "red", "A424YE161", "truck")
     client.add_blog("07.01.2025 0:12", "black", "E891AA61", "truck")
 
     # Получение списка пользователей
     client.fetch_blog()
+    '''
     detect(
         video_file_path,
         yolo_model_path,

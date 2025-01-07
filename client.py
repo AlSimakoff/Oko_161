@@ -1,14 +1,14 @@
 import requests
 
 
-def add_blog(time, color, license_number, type_auto):
+def add_blog(row):
     """Отправляет данные на сервер."""
     url = 'http://localhost:5000/journalblog'
     entry_data = {
-        'time': time,
-        'color': color,
-        'license_number': license_number,
-        'type_auto': type_auto
+        'time': row['time'],
+        'color': row['color'],
+        'license_number': row['license_number'],
+        'type_auto': row['type_auto']
 
     }
 
