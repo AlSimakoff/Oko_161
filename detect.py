@@ -13,56 +13,57 @@ import numpy as np
 from colour_detection.detect_color import detect_color
 import db
 import re
-import numpy
 
 
 def preprocess(image: np.ndarray, size: tuple) -> np.ndarray:
     """
-    Препроцесс перед отправкой на YOLO
-    Ресайз, нормализация и т.д.
+    Препроцесс перед отправкой на YOLO.
+    Ресайз изображения до нужного размера.
     """
     image = cv2.resize(
-        image, size, fx=0, fy=0, interpolation=cv2.INTER_CUBIC  # resolution
+        image, size, fx=0, fy=0, interpolation=cv2.INTER_CUBIC  # Изменение разрешения изображения
     )
     return image
 
+
 def get_frames(video_src: str) -> np.ndarray:
     """
-    Генератор, котрый читает видео и отдает фреймы
+    Генератор, который читает видео и отдает фреймы.
+    Используется для обработки видео по кадрам.
     """
     cap = cv2.VideoCapture(video_src)
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:
-            yield frame
+            yield frame  # Возвращаем текущий кадр
         else:
-            print("End video")
+            print("End video")  # Сообщение о завершении видео
             break
     return None
 
+
 def get_boxes(results, frame):
-
     """
-    return dict with labels and cords
-    :param results: inferences made by model
-    :param frame: frame on which cords calculated
-    :return: dict with labels and cords
+    Извлекает метки и координаты обнаруженных объектов из результатов модели.
+
+    :param results: Результаты инференса модели.
+    :param frame: Фрейм, на котором рассчитываются координаты.
+    :return: Словарь с метками и координатами объектов.
     """
 
-    labels, cord = results
+    labels, cord = results  # Получаем метки и координаты объектов
 
-    n = len(labels)
-    x_shape, y_shape = frame.shape[1], frame.shape[0]
+    n = len(labels)  # Количество обнаруженных объектов
+    x_shape, y_shape = frame.shape[1], frame.shape[0]  # Размеры фрейма
 
     labls_cords = {}
-    numbers = []
-    cars = []
-    trucks = []
-    buses = []
+    numbers = []  # Список для хранения координат номерных знаков
+    cars = []  # Список для хранения координат автомобилей
+    trucks = []  # Список для хранения координат грузовиков
+    buses = []  # Список для хранения координат автобусов
 
     for i in range(n):
-
-        row = cord[i]
+        row = cord[i]  # Получаем координаты объекта
         x1, y1, x2, y2 = (
             int(row[0] * x_shape),
             int(row[1] * y_shape),
@@ -71,29 +72,35 @@ def get_boxes(results, frame):
         )
 
         if labels[i] == 3:
-            numbers.append((x1, y1, x2, y2))
-        #elif labels[i] == 1:
+            numbers.append((x1, y1, x2, y2))  # Добавляем номерные знаки в список
         elif labels[i] == 2:
-            cars.append((x1, y1, x2, y2))
-        # elif labels[i] == 2:
+            cars.append((x1, y1, x2, y2))  # Добавляем автомобили в список
         elif labels[i] == 4:
-            trucks.append((x1, y1, x2, y2))
+            trucks.append((x1, y1, x2, y2))  # Добавляем грузовики в список
         elif labels[i] == 1:
-            buses.append((x1, y1, x2, y2))
+            buses.append((x1, y1, x2, y2))  # Добавляем автобусы в список
 
-    labls_cords["numbers"] = numbers
-    labls_cords["cars"] = cars
-    labls_cords["trucks"] = trucks
-    labls_cords["busses"] = buses
+    labls_cords["numbers"] = numbers  # Сохраняем номера в словаре
+    labls_cords["cars"] = cars  # Сохраняем автомобили в словаре
+    labls_cords["trucks"] = trucks  # Сохраняем грузовики в словаре
+    labls_cords["busses"] = buses  # Сохраняем автобусы в словаре
 
     return labls_cords
 
+
 def check_roi(coords):
+    """
+    Проверяет, находится ли объект в заданной области интереса (ROI).
 
-    detection_area = settings.DETECTION_AREA
+    :param coords: Координаты объекта.
+    :return: True если объект в ROI, иначе False.
+    """
 
-    xc = int((coords[0] + coords[2]) / 2)
-    yc = int((coords[1] + coords[3]) / 2)
+    detection_area = settings.DETECTION_AREA  # Задаем область интереса из настроек
+
+    xc = int((coords[0] + coords[2]) / 2)  # Центр по оси X объекта
+    yc = int((coords[1] + coords[3]) / 2)  # Центр по оси Y объекта
+
     if (
         (detection_area[0][0] < xc < detection_area[1][0])
         and
@@ -104,29 +111,39 @@ def check_roi(coords):
         return False
 
 def plot_boxes(cars_list: list, frame: np.ndarray) -> np.ndarray:
+    """
+    Отрисовывает рамки вокруг обнаруженных объектов на кадре.
+
+    :param cars_list: Список обнаруженных объектов с их координатами и метками.
+    :param frame: Кадр на котором отрисовываются рамки.
+
+    :return: Кадр с отрисованными рамками.
+    """
 
     n = len(cars_list)
 
     for car in cars_list:
-
-        car_type = car[2]
+        car_type = car[2]  # Тип автомобиля
 
         x1_number, y1_number, x2_number, y2_number = car[0][0]
-        number = car[0][1]+"_"+car[3]
+        number = car[0][1] + "_" + car[3]
 
         x1_car, y1_car, x2_car, y2_car = car[1][0]
         colour = car[1][1]
-        car_bgr=(0,0,0)
+
+        car_bgr = (0, 0, 0)  # Цвет рамки автомобиля по умолчанию
+
         if car_type == "car":
-            car_bgr = (0, 0, 255)
+            car_bgr = (0, 0, 255)  # Красный для автомобилей
         elif car_type == "truck":
-            car_bgr = (0, 255, 0)
+            car_bgr = (0, 255, 0)  # Зеленый для грузовиков
         elif car_type == "bus":
-            car_bgr = (255, 0, 0)
+            car_bgr = (255, 0, 0)  # Синий для автобусов
 
-        number_bgr = (255, 255, 255)
+        number_bgr = (255, 255, 255)  # Белый цвет рамки для номерного знака
 
-        cv2.rectangle(frame, (x1_car, y1_car), (x2_car, y2_car), car_bgr, 2)
+        cv2.rectangle(frame, (x1_car, y1_car), (x2_car, y2_car), car_bgr, 2)  # Рисуем рамку вокруг автомобиля
+
         cv2.putText(
             frame,
             car_type + " " + colour,
@@ -136,11 +153,16 @@ def plot_boxes(cars_list: list, frame: np.ndarray) -> np.ndarray:
             car_bgr,
             thickness=2,
             lineType=cv2.LINE_AA,
-        )
+        )  # Подписываем тип и цвет автомобиля
 
         cv2.rectangle(
-            frame, (x1_number, y1_number), (x2_number, y2_number), number_bgr, 2
-        )
+            frame,
+            (x1_number, y1_number),
+            (x2_number, y2_number),
+            number_bgr,
+            2
+        )  # Рисуем рамку вокруг номерного знака
+
         cv2.putText(
             frame,
             number,
@@ -150,72 +172,100 @@ def plot_boxes(cars_list: list, frame: np.ndarray) -> np.ndarray:
             number_bgr,
             thickness=2,
             lineType=cv2.LINE_AA,
-        )
+        )  # Подписываем номерной знак
 
-    detection_area = settings.DETECTION_AREA
+    detection_area = settings.DETECTION_AREA  # Получаем область интереса из настроек
 
-    cv2.rectangle(frame, detection_area[0], detection_area[1], (0, 0, 0), 2)
+    cv2.rectangle(frame, detection_area[0], detection_area[1], (0, 0, 0), 2)  # Рисуем рамку вокруг области интереса
 
     return frame
-def db_entry(time_detect, lic_number, color, type_auto):
-    db_entry_row = {"time":time_detect,"license_number":lic_number, "color":color,"type_auto":type_auto}
-    print(db_entry_row)
-    db.add_entry(settings.database_path, "Journal", db_entry_row)
-    client.add_blog(db_entry_row)
+
+
+def db_entry(time_detected, lic_number, color, type_auto):
+    """
+    Записывает данные о распознанном автомобиле в базу данных.
+
+    :param time_detected: Время обнаружения автомобиля.
+    :param lic_number: Номер автомобиля.
+    :param color: Цвет автомобиля.
+    :param type_auto: Тип автомобиля (например "car", "truck", "bus").
+
+     Запись добавляется как в базу данных через функцию db.add_entry(), так и через клиентский интерфейс client.add_blog().
+     """
+
+
+    db_entry_row = {"time": time_detected, "license_number": lic_number, "color": color, "type_auto": type_auto}
+
+    print(db_entry_row)  # Выводим данные о записи в консоль
+
+    db.add_entry(settings.database_path, "Journal", db_entry_row)  # Добавляем запись в базу данных
+
+    client.add_blog(db_entry_row)  # Добавляем запись через клиентский интерфейс
+
 
 def detect(
-    video_file_path,
-    yolo_model_path,
-    yolo_conf,
-    yolo_iou,
-    lpr_model_path,
-    lpr_max_len,
-    lpr_dropout_rate,
-    device
-    ):
+        video_file_path,
+        yolo_model_path,
+        yolo_conf,
+        yolo_iou,
+        lpr_model_path,
+        lpr_max_len,
+        lpr_dropout_rate,
+        device):
+    """
+    Основная функция для обнаружения объектов на видео.
 
+    :param video_file_path: Путь к видеофайлу для обработки.
+    :param yolo_model_path: Путь к модели YOLO для обнаружения объектов.
+    :param yolo_conf: Уровень уверенности для YOLO.
+    :param yolo_iou: Порог IoU для YOLO.
+    :param lpr_model_path: Путь к модели LPR (распознавание номерных знаков).
+    :param lpr_max_len: Максимальная длина номерного знака.
+    :param lpr_dropout_rate: Уровень дропаута для модели LPR.
+    :param device: Устройство (CPU или GPU) для выполнения модели.
 
-    cv2.startWindowThread()
-    #detector = ObjectDetection(
-    #    yolo_model_path,
-    #    conf=yolo_conf,
-    #    iou=yolo_iou,
-    #    device = device
-    #    )
-    LPRnet = build_lprnet(
+    Запускает процесс обработки видео и обнаружения объектов.
+    """
+
+    cv2.startWindowThread()  # Запускаем поток окна OpenCV
+
+    LPRnet = build_lprnet(  ### Создаем модель LPR ###
         lpr_max_len=lpr_max_len,
         phase=False,
         class_num=len(CHARS),
         dropout_rate=lpr_dropout_rate
     )
-    LPRnet.to(torch.device(device))
+
+    LPRnet.to(torch.device(device))  ### Переносим модель на нужное устройство ###
+
     LPRnet.load_state_dict(
-        torch.load(lpr_model_path,map_location=torch.device('cpu'))
+        torch.load(lpr_model_path, map_location=torch.device('cpu'))  ### Загружаем веса модели ###
     )
-    last_number = ""
-    for raw_frame in get_frames(video_file_path):
 
-        proc_frame = preprocess(raw_frame, settings.FINAL_FRAME_RES)
-        results = tracking.recognise(yolo_model_path, proc_frame)
-        #results = detector.score_frame(proc_frame)
-        #results = detector.score_frame(raw_frame)
-        labls_cords = get_boxes(results, raw_frame)
-        new_cars = check_numbers_overlaps(labls_cords)
+    last_number = ""  ### Переменная для отслеживания последнего распознанного номера ###
 
-        # list to write cars that've been defined
-        cars = []
+    for raw_frame in get_frames(video_file_path):  ### Читаем кадры из видео ###
+
+        proc_frame = preprocess(raw_frame, settings.FINAL_FRAME_RES)  ### Препроцессинг кадра ###
+
+        results = tracking.recognise(yolo_model_path, proc_frame)  ### Обнаружение объектов ###
+
+        labls_cords = get_boxes(results, raw_frame)  ### Получаем метки и координаты объектов ###
+
+        new_cars = check_numbers_overlaps(labls_cords)  ### Проверяем пересечения номеров с автомобилями ###
+
+        cars = []  ### Список автомобилей ###
 
         for car in new_cars:
 
-            plate_coords = car[0]
-            car_coords = car[1]
+            plate_coords = car[0]  ### Координаты номерного знака ###
+            car_coords = car[1]  ### Координаты автомобиля ###
 
-            if check_roi(plate_coords):
-            #if True:
+            if check_roi(plate_coords):  ### Проверяем нахождение номера в области интереса ###
                 x1_car, y1_car = car_coords[0], car_coords[1]
                 x2_car, y2_car = car_coords[2], car_coords[3]
 
-                # define car's colour
+                ## Определяем цвет автомобиля ##
                 car_box_image = raw_frame[y1_car:y2_car, x1_car:x2_car]
                 colour = detect_color(car_box_image)
 
@@ -224,42 +274,39 @@ def detect(
                 x1_plate, y1_plate = plate_coords[0], plate_coords[1]
                 x2_plate, y2_plate = plate_coords[2], plate_coords[3]
 
-                # define number on the plate
+                ## Определяем номер на номерном знаке ##
                 plate_box_image = raw_frame[y1_plate:y2_plate, x1_plate:x2_plate]
                 plate_text = rec_plate(LPRnet, plate_box_image)
 
-                # check if number mutchs russian number type
+                ## Проверяем соответствует ли номер российскому формату ##
                 if (
                         not re.match("[A-Z]{1}[0-9]{3}[A-Z]{2}[0-9]{2,3}", plate_text)
-                            is None
-                ):
-
+                            is None):
                     car[0] = [plate_coords, plate_text]
-                    car.append("OK")
-                    #Added entry to db
-                    #db_entry = (str(datetime.now().strftime('%Y-%m-%d %H:%M:%S')), car[0][1], car[1][1], car[2])
-                    #print(db_entry)
+                    car.append("OK")  ### Номер успешно распознан ###
+
+                    ## Добавляем запись в базу данных ##
+                    ## db_entry может быть вызван здесь или позже ##
+
                 else:
-
                     car[0] = [plate_coords, plate_text]
-                    car.append("NOK")
+                    car.append("NOK")  ### Номер не распознан корректно ###
 
-                cars.append(car)
+            cars.append(car)
 
         for car in cars:
-            if car[0][1]!=last_number and car[3]=="OK":
+            if car[0][1] != last_number and car[3] == "OK":  ### Если номер изменился и он успешно распознан ###
                 db_entry(str(datetime.now().strftime('%Y-%m-%d %H:%M:%S')), car[0][1], car[1][1], car[2])
-                last_number=car[0][1]
-        drawn_frame = plot_boxes(cars, raw_frame)
+                last_number = car[0][1]
+
+        drawn_frame = plot_boxes(cars, raw_frame)  ### Отрисовываем рамки вокруг обнаруженных объектов ###
         proc_frame = preprocess(drawn_frame, settings.FINAL_FRAME_RES)
 
+        cv2.imshow("video", proc_frame)  ### Показываем обработанный кадр на экране ###
 
-
-        cv2.imshow("video", proc_frame)
-        #cv2.imshow("video", drawn_frame)
-        # wait 5 sec if push 's'
+        ## Ожидание нажатия клавиши 's' или 'q' ##
         if cv2.waitKey(30) & 0xFF == ord("s"):
             time.sleep(5)
 
         if cv2.waitKey(30) & 0xFF == ord("q"):
-            break
+            break  ## Выход из цикла при нажатии 'q' ##

@@ -2,77 +2,67 @@ import cv2
 import numpy as np
 import torch
 
+# Список символов, которые могут быть распознаны на номерных знаках
 CHARS = [
-    "0",
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8",
-    "9",
-    "A",
-    "B",
-    "C",
-    "D",
-    "E",
-    "F",
-    "G",
-    "H",
-    "J",
-    "K",
-    "L",
-    "M",
-    "N",
-    "P",
-    "Q",
-    "R",
-    "S",
-    "T",
-    "U",
-    "V",
-    "W",
-    "X",
-    "Y",
-    "Z",
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+    "A", "B", "C", "D", "E", "F", "G", "H", "J", "K",
+    "L", "M", "N", "P", "Q", "R", "S", "T", "U", "V",
+    "W", "X", "Y", "Z",
+    # Заменяем I и O на другие символы, чтобы избежать путаницы
     "I",
     "O",
     "_",
 ]
 
-def rec_plate(lprnet, img) -> str:
-    # preproc img
-    image = img
-    width, length, _ = image.shape
-    image = cv2.resize(image, (94, 24))
-    image = image.astype("float32")
-    image -= 127.5
-    image *= 0.0078125
-    image = np.transpose(image, (2, 0, 1))
-    image = torch.from_numpy(image).cpu()
-    image = image.unsqueeze(0)
 
-    # forward
+def rec_plate(lprnet, img) -> str:
+    """
+    Распознает номерной знак на изображении с использованием модели LPR.
+
+    :param lprnet: Объект модели LPR для распознавания.
+    :param img: Изображение номерного знака для распознавания.
+    :return: Распознанный номерной знак в виде строки.
+    """
+
+    # Предобработка изображения
+    image = img
+    width, length, _ = image.shape  # Получаем размеры изображения
+    image = cv2.resize(image, (94, 24))  # Изменяем размер изображения для модели LPR
+    image = image.astype("float32")  # Приводим к типу float32
+    image -= 127.5  # Нормализация значений пикселей
+    image *= 0.0078125  # Масштабирование значений пикселей
+
+    # Перестановка осей для соответствия входным данным модели
+    image = np.transpose(image, (2, 0, 1))
+    image = torch.from_numpy(image).cpu()  # Преобразуем в тензор PyTorch и переносим на CPU
+    image = image.unsqueeze(0)  # Добавляем размерность для батча
+
+    # Прямой проход через модель LPR
     preds = lprnet(image)
 
-    # decode
-    preds = preds.cpu().detach().numpy()
-    label = ""
-    for i in range(preds.shape[0]):
-        preds = preds[i, :, :]
-        preds_label = list()
-        for j in range(preds.shape[1]):
-            preds_label.append(np.argmax(preds[:, j], axis=0))
-        pre_c = preds_label[0]
-        if pre_c != len(CHARS) - 1:
-            label += CHARS[pre_c]
-        for c in preds_label:  # dropout repeate label and blank label
-            if (pre_c == c) or (c == len(CHARS) - 1):
+    # Декодирование предсказаний
+    preds = preds.cpu().detach().numpy()  # Переносим данные обратно на CPU и преобразуем в NumPy массив
+    label = ""  # Инициализация строки для распознанного номера
+
+    for i in range(preds.shape[0]):  # Проходим по всем предсказаниям
+        preds = preds[i, :, :]  # Получаем предсказания для текущего номера
+        preds_label = list()  # Список для хранения меток предсказаний
+
+        for j in range(preds.shape[1]):  # Проходим по каждому столбцу предсказаний
+            preds_label.append(np.argmax(preds[:, j], axis=0))  # Находим индекс максимального значения
+
+        pre_c = preds_label[0]  # Инициализация предыдущего символа
+
+        if pre_c != len(CHARS) - 1:  # Проверяем, не является ли символ пробелом
+            label += CHARS[pre_c]  # Добавляем символ к распознанному номеру
+
+        for c in preds_label:  # Убираем повторяющиеся символы и пробелы
+            if (pre_c == c) or (c == len(CHARS) - 1):  # Если текущий символ такой же как предыдущий или пробел
                 if c == len(CHARS) - 1:
-                    pre_c = c
+                    pre_c = c  # Обновляем предыдущий символ на пробел
                 continue
-            label += CHARS[c]
-            pre_c = c
-    return label
+
+            label += CHARS[c]  # Добавляем текущий символ к распознанному номеру
+            pre_c = c  # Обновляем предыдущий символ
+
+    return label  # Возвращаем распознанный номерной знак в виде строки

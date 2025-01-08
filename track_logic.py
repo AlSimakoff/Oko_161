@@ -1,52 +1,48 @@
-
-
-
 def check_numbers_overlaps(labls_cords: dict) -> list:
-
     """
-    Check each number's BB and correlate it with car's BB
+    Проверяет пересечения ограничивающих рамок номерных знаков с рамками автомобилей.
 
-    return: list - the list has following structure [
-        [(number's cords), (car's cords), 'car_type'],
-        [(number's cords), (car's cords), 'car_type'],
+    :param labls_cords: Словарь с координатами номерных знаков и автомобилей.
+    :return: Список, содержащий структуры вида [
+        [(координаты номерного знака), (координаты автомобиля), 'тип автомобиля'],
         ...
-        ]
+    ]
     """
 
-    new_cars = []
+    new_cars = []  # Список для хранения найденных автомобилей с номерными знаками
 
+    # Проходим по всем номерным знакам
     for number in labls_cords["numbers"]:
-        added = False
+        added = False  # Флаг для отслеживания добавления автомобиля
+
+        # Проверка на пересечение с автомобилями
         for car in labls_cords["cars"]:
-
-            # check if number's bounding box fully overlaps car's
+            # Проверка, полностью ли пересекается рамка номерного знака с рамкой автомобиля
             if (car[0] <= number[0] <= number[2] <= car[2]) and (
                 car[1] <= number[1] <= number[3] <= car[3]
             ):
-                if not added:
-                    new_cars.append([number, car, "car"])
+                if not added:  # Если автомобиль еще не добавлен
+                    new_cars.append([number, car, "car"])  # Добавляем информацию о найденном автомобиле
+                    added = True  # Устанавливаем флаг, что автомобиль добавлен
             break
 
+        # Проверка на пересечение с грузовиками
         for car in labls_cords["trucks"]:
-
-            # check if number's bounding box fully overlaps car's
             if (car[0] <= number[0] <= number[2] <= car[2]) and (
                 car[1] <= number[1] <= number[3] <= car[3]
             ):
-                if not added:
-                    new_cars.append([number, car, "truck"])
+                if not added:  # Если автомобиль еще не добавлен
+                    new_cars.append([number, car, "truck"])  # Добавляем информацию о найденном грузовике
+                    added = True  # Устанавливаем флаг, что грузовик добавлен
             break
-
+        # Проверка на пересечение с автобусами
         for car in labls_cords["busses"]:
-
-            # check if number's bounding box fully overlaps car's
             if (car[0] <= number[0] <= number[2] <= car[2]) and (
                 car[1] <= number[1] <= number[3] <= car[3]
             ):
-                if not added:
-                    new_cars.append([number, car, "bus"])
+                if not added:  # Если автобус еще не добавлен
+                    new_cars.append([number, car, "bus"])  # Добавляем информацию о найденном автобусе
+                    added = True  # Устанавливаем флаг, что автобус добавлен
             break
 
-
-    return new_cars
-
+    return new_cars  # Возвращаем список найденных автомобилей с номерными знаками
