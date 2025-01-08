@@ -1,7 +1,6 @@
 import settings
 from detect import detect
 import db
-import client
 
 def main(video_file_path,
          yolo_model_path,

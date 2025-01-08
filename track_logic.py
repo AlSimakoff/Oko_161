@@ -1,6 +1,4 @@
-import re
 
-import numpy
 
 
 def check_numbers_overlaps(labls_cords: dict) -> list:

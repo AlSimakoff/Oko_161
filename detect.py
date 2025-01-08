@@ -12,6 +12,9 @@ from track_logic import *
 import numpy as np
 from colour_detection.detect_color import detect_color
 import db
+import re
+import numpy
+
 
 def preprocess(image: np.ndarray, size: tuple) -> np.ndarray:
     """

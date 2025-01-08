@@ -6,7 +6,7 @@ DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 FILE_PATH = os.environ.get(
     'file_path', 
-    os.path.normpath("data/video_test/test_truck.mp4")
+    os.path.normpath("data/video_test/test.mp4")
 )
 YOLO_MODEL_PATH = os.environ.get(
     'yolo_model', 
@@ -22,7 +22,7 @@ YOLO_IOU = 0.4
 LPR_MAX_LEN = 9
 LPR_DROPOUT = 0
 
-FINAL_FRAME_RES = (640, 480)
+FINAL_FRAME_RES = (1080, 720)
 DETECTION_AREA = [(0, 0), (1920, 1000)]
 
 database_path='data/database/oko161.db'

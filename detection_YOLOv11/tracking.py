@@ -2,7 +2,9 @@ from ultralytics import YOLO
 import cv2
 
 
-
+'''
+Function for testing
+'''
 def fullrecognise():
     model = YOLO("detection_YOLOv11/Yolov11n_CarTruckPlate.pt")
     video_path= "../data/video_test/Blog_05_20241228_08.36.22-08.36.35.h264"
@@ -26,6 +28,10 @@ def fullrecognise():
     cap.release()
     cv2.destroyAllWindows()
 
+
+'''
+Main function recognise with YOLO
+'''
 def recognise (model_path, frame):
     model = YOLO(model_path)
     results = model.track(

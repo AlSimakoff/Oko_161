@@ -12,20 +12,37 @@ def add_blog(row):
 
     }
 
-    response = requests.post(url, json=entry_data)
+    try:
+        response = requests.post(url, json=entry_data)
+        response.raise_for_status()  # Проверка на ошибки HTTP
 
-    if response.status_code == 201:
-        print("Запись успешно добавлена.")
-    else:
-        print(f"Ошибка при добавлении записи: {response.json().get('error')}")
+        # Обработка успешного ответа
+        print("Запись успешно добавлена:", response.json())
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP ошибка: {http_err}")
+    except requests.exceptions.ConnectionError as conn_err:
+        print(f"Ошибка подключения: {conn_err}")
+    except requests.exceptions.Timeout as timeout_err:
+        print(f"Время ожидания истекло: {timeout_err}")
+    except requests.exceptions.RequestException as req_err:
+        print(f"Ошибка запроса: {req_err}")
 
 
 def fetch_blog():
     """Получает данные о записях из API."""
-    response = requests.get('http://localhost:5000/journalblog')
+    try:
+        response = requests.get('http://localhost:5000/journalblog')
+        response.raise_for_status()  # Проверка на ошибки HTTP
 
-    if response.status_code == 200:
-        rows = response.json()  # Десериализация JSON-ответа
-        print("Полученные записи:", rows)
-    else:
-        print(f"Ошибка при получении данных: {response.status_code}")
+        # Обработка успешного ответа
+        entries = response.json()  # Предполагаем, что ответ в формате JSON
+        print("Записи успешно получены:", entries)
+        return entries
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP ошибка: {http_err}")
+    except requests.exceptions.ConnectionError as conn_err:
+        print(f"Ошибка подключения: {conn_err}")
+    except requests.exceptions.Timeout as timeout_err:
+        print(f"Время ожидания истекло: {timeout_err}")
+    except requests.exceptions.RequestException as req_err:
+        print(f"Ошибка запроса: {req_err}")
