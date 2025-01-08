@@ -292,7 +292,7 @@ def detect(
                     car[0] = [plate_coords, plate_text]
                     car.append("NOK")  ### Номер не распознан корректно ###
 
-            cars.append(car)
+                cars.append(car)
 
         for car in cars:
             if car[0][1] != last_number and car[3] == "OK":  ### Если номер изменился и он успешно распознан ###

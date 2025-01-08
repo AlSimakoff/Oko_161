@@ -1,13 +1,16 @@
 import requests
+from ultralytics import settings
+import settings
 
 def add_blog(row):
     """Отправляет данные на сервер."""
-    url = 'http://localhost:5000/journalblog'  # URL API для добавления записи
+    url = 'http://localhost:5000/oko161'  # URL API для добавления записи
     entry_data = {
         'time': row['time'],  # Время записи
         'color': row['color'],  # Цвет автомобиля
         'license_number': row['license_number'],  # Номер автомобиля
-        'type_auto': row['type_auto']  # Тип автомобиля (например, "car", "truck", "bus")
+        'type_auto': row['type_auto'],  # Тип автомобиля (например, "car", "truck", "bus")
+        'table_name': settings.name_company_object
     }
 
     try:
@@ -29,12 +32,9 @@ def add_blog(row):
 def fetch_blog():
     """Получает данные о записях из API."""
     try:
-        # Отправляем GET-запрос для получения записей
-        response = requests.get('http://localhost:5000/journalblog')
-        response.raise_for_status()  # Проверка на ошибки HTTP
-
+        param={'table':settings.name_company_object}
         # Обработка успешного ответа
-        entries = response.json()  # Предполагаем, что ответ в формате JSON
+        entries = requests.get('http://localhost:5000/oko161/', params=param)
         print("Записи успешно получены:", entries)  # Выводим полученные записи
         return entries  # Возвращаем записи
     except requests.exceptions.HTTPError as http_err:
