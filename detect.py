@@ -32,14 +32,20 @@ def get_frames(video_src: str) -> np.ndarray:
     Используется для обработки видео по кадрам.
     """
     cap = cv2.VideoCapture(video_src)
+
+    fps=cap.get(cv2.CAP_PROP_FPS)
+
+    interval = int(fps) / settings.FPS_detect #Установка FPS для рапознавания
+    index = 0
     while cap.isOpened():
         ret, frame = cap.read()
-        if ret:
-            yield frame  # Возвращаем текущий кадр
-        else:
+        if not ret:
             print("End video")  # Сообщение о завершении видео
             break
-    return None
+        if index % interval == 0:
+            yield frame  # Возвращаем текущий кадр
+        index +=1
+    cap.release()
 
 
 def get_boxes(results, frame):
@@ -201,6 +207,9 @@ def db_entry(time_detected, lic_number, color, type_auto):
     db.add_entry(settings.database_path, "Journal", db_entry_row)  # Добавляем запись в базу данных
 
     client.add_blog(db_entry_row)  # Добавляем запись через клиентский интерфейс
+
+
+
 
 
 def detect(
