@@ -1,12 +1,10 @@
 import os
 
-import torch
-
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+DEVICE = 'cpu'
 
 FILE_PATH = os.environ.get(
     'file_path', 
-    os.path.normpath("data/video_test/test.mp4")
+    os.path.normpath("data/video_test/test_Blog.h264")
 )
 YOLO_MODEL_PATH = os.environ.get(
     'yolo_model', 
@@ -29,3 +27,8 @@ database_path='data/database/oko161.db'
 
 #Название площадки для передачи записей в бд
 name_company_object="BolshoiLog"
+
+#Количество кадров в секунду, которые будет обрабатывать модель
+FPS_detect=5
+
+server_url= 'http://localhost:5000/oko161'

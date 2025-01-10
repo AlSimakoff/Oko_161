@@ -4,7 +4,7 @@ import settings
 
 def add_blog(row):
     """Отправляет данные на сервер."""
-    url = 'http://localhost:5000/oko161'  # URL API для добавления записи
+    url = settings.server_url
     entry_data = {
         'time': row['time'],  # Время записи
         'color': row['color'],  # Цвет автомобиля
@@ -34,7 +34,7 @@ def fetch_blog():
     try:
         param={'table':settings.name_company_object}
         # Обработка успешного ответа
-        entries = requests.get('http://localhost:5000/oko161/', params=param)
+        entries = requests.get(settings.server_url, params=param)
         print("Записи успешно получены:", entries)  # Выводим полученные записи
         return entries  # Возвращаем записи
     except requests.exceptions.HTTPError as http_err:
