@@ -216,7 +216,6 @@ def detect_color(box_image):
 
     source_image = box_image
     prediction = "n.a."
-
     if training_feature_vector:
         prediction = main(source_image)
     else:
