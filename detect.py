@@ -71,13 +71,13 @@ def get_boxes(results, frame):
             int(row[3] * y_shape),
         )
 
-        if labels[i] == 3:
+        if labels[i] == 0:
             numbers.append((x1, y1, x2, y2))  # Добавляем номерные знаки в список
         elif labels[i] == 2:
             cars.append((x1, y1, x2, y2))  # Добавляем автомобили в список
-        elif labels[i] == 4:
-            trucks.append((x1, y1, x2, y2))  # Добавляем грузовики в список
         elif labels[i] == 1:
+            trucks.append((x1, y1, x2, y2))  # Добавляем грузовики в список
+        elif labels[i] == 3:
             buses.append((x1, y1, x2, y2))  # Добавляем автобусы в список
 
     labls_cords["numbers"] = numbers  # Сохраняем номера в словаре
