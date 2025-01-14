@@ -8,7 +8,7 @@ DEVICE = 'cpu'
 #Путь для распознавания
 FILE_PATH = os.environ.get(
     'file_path', 
-    os.path.normpath("data/video_test/Blog_05_20241228_08.36.22-08.36.35.h264")
+    os.path.normpath("data/video_test/test_Blog.h264")
 )
 #Путь к модели YOLO
 YOLO_MODEL_PATH = os.environ.get(
