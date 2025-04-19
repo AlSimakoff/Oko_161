@@ -1,6 +1,11 @@
+import datetime
+
 import cv2
 import numpy as np
 import torch
+from os import path
+
+from numpy.distutils.lib2def import output_def
 
 # Список символов, которые могут быть распознаны на номерных знаках
 CHARS = [
@@ -13,7 +18,6 @@ CHARS = [
     "O",
     "_",
 ]
-
 
 def rec_plate(lprnet, img) -> str:
     """
@@ -31,7 +35,6 @@ def rec_plate(lprnet, img) -> str:
     image = image.astype("float32")  # Приводим к типу float32
     image -= 127.5  # Нормализация значений пикселей
     image *= 0.0078125  # Масштабирование значений пикселей
-
     # Перестановка осей для соответствия входным данным модели
     image = np.transpose(image, (2, 0, 1))
     image = torch.from_numpy(image).cpu()  # Преобразуем в тензор PyTorch и переносим на CPU

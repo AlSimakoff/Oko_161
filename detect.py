@@ -13,6 +13,7 @@ import numpy as np
 from colour_detection.detect_color import detect_color
 import db
 import re
+from recognition import  recognition
 
 
 def preprocess(image: np.ndarray, size: tuple) -> np.ndarray:
@@ -35,7 +36,9 @@ def get_frames(video_src: str) -> np.ndarray:
 
     fps=cap.get(cv2.CAP_PROP_FPS)
 
-    interval = int(fps) / settings.FPS_detect #Установка FPS для рапознавания
+    interval = round(int(fps) / settings.FPS_detect) #Установка FPS для распознавания
+    if interval == 0:
+        interval = 1
     index = 0
     while cap.isOpened():
         ret, frame = cap.read()
@@ -252,7 +255,7 @@ def detect(
     )
 
     last_number = ""  ### Переменная для отслеживания последнего распознанного номера ###
-
+    k=1
     for raw_frame in get_frames(video_file_path):  ### Читаем кадры из видео ###
 
         proc_frame = preprocess(raw_frame, settings.FINAL_FRAME_RES)  ### Препроцессинг кадра ###
@@ -285,8 +288,8 @@ def detect(
 
                 ## Определяем номер на номерном знаке ##
                 plate_box_image = raw_frame[y1_plate:y2_plate, x1_plate:x2_plate]
-                plate_text = rec_plate(LPRnet, plate_box_image)
-
+                #plate_text = rec_plate(LPRnet, plate_box_image)
+                plate_text = recognition(plate_box_image)
                 ## Проверяем соответствует ли номер российскому формату ##
                 if (
                         not re.match("[A-Z]{1}[0-9]{3}[A-Z]{2}[0-9]{2,3}", plate_text)
@@ -319,3 +322,99 @@ def detect(
 
         if cv2.waitKey(30) & 0xFF == ord("q"):
             break  ## Выход из цикла при нажатии 'q' ##
+
+
+def detectSource(
+        video_source,
+        yolo_model_path,
+        yolo_conf,
+        yolo_iou,
+        lpr_model_path,
+        lpr_max_len,
+        lpr_dropout_rate,
+        device):
+    """
+    Основная функция для обнаружения объектов на видеопотоке.
+
+    :param video_source: Источник видеопотока (номер камеры или URL).
+    :param yolo_model_path: Путь к модели YOLO для обнаружения объектов.
+    :param yolo_conf: Уровень уверенности для YOLO.
+    :param yolo_iou: Порог IoU для YOLO.
+    :param lpr_model_path: Путь к модели LPR (распознавание номерных знаков).
+    :param lpr_max_len: Максимальная длина номерного знака.
+    :param lpr_dropout_rate: Уровень дропаута для модели LPR.
+    :param device: Устройство (CPU или GPU) для выполнения модели.
+    """
+
+    cap = cv2.VideoCapture(video_source)
+    if not cap.isOpened():
+        print("Ошибка: Не удалось открыть видеопоток.")
+        return
+
+    LPRnet = build_lprnet(
+        lpr_max_len=lpr_max_len,
+        phase=False,
+        class_num=len(CHARS),
+        dropout_rate=lpr_dropout_rate
+    )
+    LPRnet.to(torch.device(device))
+    LPRnet.load_state_dict(torch.load(lpr_model_path, map_location=torch.device(device)))
+
+    last_number = ""
+    k = 1
+
+    while True:
+        ret, raw_frame = cap.read()
+        if not ret:
+            print("Ошибка: Кадр не считался.")
+            break
+
+        proc_frame = preprocess(raw_frame, settings.FINAL_FRAME_RES)
+        results = tracking.recognise(yolo_model_path, proc_frame)
+        labls_cords = get_boxes(results, raw_frame)
+        new_cars = check_numbers_overlaps(labls_cords)
+        cars = []
+
+        for car in new_cars:
+            plate_coords = car[0]
+            car_coords = car[1]
+
+            if check_roi(plate_coords):
+                x1_car, y1_car = car_coords[0], car_coords[1]
+                x2_car, y2_car = car_coords[2], car_coords[3]
+                car_box_image = raw_frame[y1_car:y2_car, x1_car:x2_car]
+                colour = detect_color(car_box_image)
+                car[1] = [car_coords, colour]
+
+                x1_plate, y1_plate = plate_coords[0], plate_coords[1]
+                x2_plate, y2_plate = plate_coords[2], plate_coords[3]
+                plate_box_image = raw_frame[y1_plate:y2_plate, x1_plate:x2_plate]
+                plate_text = recognition(plate_box_image)
+
+                if re.match("[A-Z]{1}[0-9]{3}[A-Z]{2}[0-9]{2,3}", plate_text):
+                    car[0] = [plate_coords, plate_text]
+                    car.append("OK")
+                else:
+                    car[0] = [plate_coords, plate_text]
+                    car.append("NOK")
+
+                cars.append(car)
+
+        '''for car in cars:
+            if car[0][1] != last_number and car[3] == "OK":
+                db_entry(str(datetime.now().strftime('%Y-%m-%d %H:%M:%S')), car[0][1], car[1][1], car[2])
+                last_number = car[0][1]'''
+
+        drawn_frame = plot_boxes(cars, raw_frame)
+        proc_frame = preprocess(drawn_frame, settings.FINAL_FRAME_RES)
+        cv2.imshow("video", proc_frame)
+
+        key = cv2.waitKey(30) & 0xFF
+        if key == ord("s"):
+            time.sleep(5)
+        elif key == ord("q"):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+

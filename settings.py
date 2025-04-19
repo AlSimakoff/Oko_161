@@ -39,7 +39,7 @@ database_path='data/database/oko161.db'
 name_company_object="BolshoiLog"
 
 #Количество кадров в секунду, которые будет обрабатывать модель
-FPS_detect=5
+FPS_detect=25
 
 #Адрес сервера
 server_url= 'http://localhost:5000/oko161'
