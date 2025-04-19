@@ -69,3 +69,47 @@ def rec_plate(lprnet, img) -> str:
             pre_c = c  # Обновляем предыдущий символ
 
     return label  # Возвращаем распознанный номерной знак в виде строки
+
+
+
+def softmax(x):
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum(axis=0)
+
+def rec_plate_with_confidence(lprnet, img) -> tuple[str, float]:
+    image = cv2.resize(img, (94, 24)).astype("float32")
+    image = (image - 127.5) * 0.0078125
+    image = np.transpose(image, (2, 0, 1))
+    image = torch.from_numpy(image).unsqueeze(0).cpu()
+
+    with torch.no_grad():
+        preds = lprnet(image)
+
+    preds_np = preds.cpu().numpy()[0]  # (num_classes, seq_len)
+    label = ""
+    confidence_scores = []
+
+    preds_label = []
+    pre_c = None
+
+    for j in range(preds_np.shape[1]):
+        softmax_probs = softmax(preds_np[:, j])
+        c = np.argmax(softmax_probs)
+        prob = softmax_probs[c]
+
+        if c == len(CHARS) - 1:  # пустой символ
+            pre_c = c
+            continue
+        if c == pre_c:
+            continue
+
+        preds_label.append((c, prob))
+        pre_c = c
+
+    for c, p in preds_label:
+        label += CHARS[c]
+        confidence_scores.append(p)
+
+    avg_confidence = float(np.mean(confidence_scores)) if confidence_scores else 0.0
+    return label, avg_confidence
+
