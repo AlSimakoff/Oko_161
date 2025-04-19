@@ -2,6 +2,7 @@ import settings
 from detect import detect, detectSource
 import db
 
+
 def main(video_file_path,
          video_source_path,
          yolo_model_path,
@@ -11,11 +12,13 @@ def main(video_file_path,
          lpr_max_len,
          lpr_dropout_rate,
          device,
-         database):
+         database,
+         from_file):
     """
     Основная функция для инициализации базы данных и запуска процесса обнаружения.
 
     :param video_file_path: Путь к видеофайлу для обработки.
+    :param video_source_path: Ссылка на доступ к видеопотоку камеры
     :param yolo_model_path: Путь к модели YOLO для обнаружения объектов.
     :param yolo_conf: Уровень уверенности для YOLO.
     :param yolo_iou: Порог IoU для YOLO.
@@ -24,6 +27,7 @@ def main(video_file_path,
     :param lpr_dropout_rate: Уровень дропаута для модели LPR.
     :param device: Устройство (CPU или GPU) для выполнения модели.
     :param database: Путь к базе данных.
+    :param from_file: Запуск распознавания в файле?
     """
 
     # Инициализация базы данных
@@ -37,28 +41,30 @@ def main(video_file_path,
     # Получение списка записей из базы данных
     client.fetch_blog()
     '''
+    if from_file:
 
-    # Запуск функции обнаружения с заданными параметрами
-    '''detect(
-        video_file_path,
-        yolo_model_path,
-        yolo_conf,
-        yolo_iou,
-        lpr_model_path,
-        lpr_max_len,
-        lpr_dropout_rate,
-        device
-    )'''
-    detect(
-        video_source_path,
-        yolo_model_path,
-        yolo_conf,
-        yolo_iou,
-        lpr_model_path,
-        lpr_max_len,
-        lpr_dropout_rate,
-        device
-    )
+        # Запуск функции обнаружения с заданными параметрами
+        detect(
+            video_file_path,
+            yolo_model_path,
+            yolo_conf,
+            yolo_iou,
+            lpr_model_path,
+            lpr_max_len,
+            lpr_dropout_rate,
+            device
+        )
+    else:
+        detectSource(
+            video_source_path,
+            yolo_model_path,
+            yolo_conf,
+            yolo_iou,
+            lpr_model_path,
+            lpr_max_len,
+            lpr_dropout_rate,
+            device
+        )
 
 if __name__ == "__main__":
     # Запуск основной функции с параметрами из файла настроек
@@ -72,5 +78,6 @@ if __name__ == "__main__":
         settings.LPR_MAX_LEN,       # Максимальная длина номерного знака
         settings.LPR_DROPOUT,       # Уровень дропаута для модели LPR
         settings.DEVICE,            # Устройство (CPU или GPU)
-        settings.database_path       # Путь к базе данных
+        settings.database_path,
+        settings.FROM_FILE# Путь к базе данных
     )

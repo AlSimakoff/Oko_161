@@ -44,4 +44,7 @@ name_company_object="BolshoiLog"
 FPS_detect=5
 
 #Адрес сервера
-server_url= 'http://localhost:5000/oko161'
+server_url= 'http://127.0.0.1:5000/oko161'
+
+#Распознавание из файла (для отладки)
+FROM_FILE=True

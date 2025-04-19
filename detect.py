@@ -3,6 +3,7 @@ import time
 import cv2
 
 import client
+import fetch_server
 from detection_YOLOv11 import tracking
 import settings
 from lpr_net.model.lpr_net import build_lprnet
@@ -190,29 +191,21 @@ def plot_boxes(cars_list: list, frame: np.ndarray) -> np.ndarray:
     return frame
 
 
-def db_entry(time_detected, lic_number, color, type_auto):
+def db_entry(time_detected, lic_number, color, type_auto, img_plate, img_car):
     """
-    Записывает данные о распознанном автомобиле в базу данных.
+    Формирует запись и отправляет в базу данных и клиентский интерфейс.
+    """
+    db_entry_row = {
+        "time": time_detected,
+        "license_number": lic_number,
+        "color": color,
+        "type_auto": type_auto
+    }
 
-    :param time_detected: Время обнаружения автомобиля.
-    :param lic_number: Номер автомобиля.
-    :param color: Цвет автомобиля.
-    :param type_auto: Тип автомобиля (например "car", "truck", "bus").
+    print(db_entry_row)
 
-     Запись добавляется как в базу данных через функцию db.add_entry(), так и через клиентский интерфейс client.add_blog().
-     """
-
-
-    db_entry_row = {"time": time_detected, "license_number": lic_number, "color": color, "type_auto": type_auto}
-
-    print(db_entry_row)  # Выводим данные о записи в консоль
-
-    db.add_entry(settings.database_path, "Journal", db_entry_row)  # Добавляем запись в базу данных
-
-    client.add_blog(db_entry_row)  # Добавляем запись через клиентский интерфейс
-
-
-
+    db.add_entry(settings.database_path, "Journal", db_entry_row)  # Локально без изображений
+    fetch_server.send_entry(time_detected, lic_number, img_plate, img_car, color=color, type_auto=type_auto)  # На сервер — с изображениями
 
 
 def detect(
@@ -225,115 +218,93 @@ def detect(
         lpr_dropout_rate,
         device):
     """
-    Основная функция для обнаружения объектов на видео.
-
-    :param video_file_path: Путь к видеофайлу для обработки.
-    :param yolo_model_path: Путь к модели YOLO для обнаружения объектов.
-    :param yolo_conf: Уровень уверенности для YOLO.
-    :param yolo_iou: Порог IoU для YOLO.
-    :param lpr_model_path: Путь к модели LPR (распознавание номерных знаков).
-    :param lpr_max_len: Максимальная длина номерного знака.
-    :param lpr_dropout_rate: Уровень дропаута для модели LPR.
-    :param device: Устройство (CPU или GPU) для выполнения модели.
-
-    Запускает процесс обработки видео и обнаружения объектов.
+    Основная функция для обработки видео.
     """
+    cv2.startWindowThread()
 
-    cv2.startWindowThread()  # Запускаем поток окна OpenCV
-
-    LPRnet = build_lprnet(  ### Создаем модель LPR ###
+    LPRnet = build_lprnet(
         lpr_max_len=lpr_max_len,
         phase=False,
         class_num=len(CHARS),
         dropout_rate=lpr_dropout_rate
     )
+    LPRnet.to(torch.device(device))
+    LPRnet.load_state_dict(torch.load(lpr_model_path, map_location=torch.device('cpu')))
 
-    LPRnet.to(torch.device(device))  ### Переносим модель на нужное устройство ###
+    last_number = ""
+    k = 0
 
-    LPRnet.load_state_dict(
-        torch.load(lpr_model_path, map_location=torch.device('cpu'))  ### Загружаем веса модели ###
-    )
-
-    last_number = ""  ### Переменная для отслеживания последнего распознанного номера ###
-    k=0
-    for raw_frame in get_frames(video_file_path):  ### Читаем кадры из видео ###
-
-        proc_frame = preprocess(raw_frame, settings.FINAL_FRAME_RES)  ### Препроцессинг кадра ###
-
-        results = tracking.recognise(yolo_model_path, proc_frame)  ### Обнаружение объектов ###
-
-        labls_cords = get_boxes(results, raw_frame)  ### Получаем метки и координаты объектов ###
-
-        new_cars = check_numbers_overlaps(labls_cords)  ### Проверяем пересечения номеров с автомобилями ###
-
-        cars = []  ### Список автомобилей ###
+    for raw_frame in get_frames(video_file_path):
+        proc_frame = preprocess(raw_frame, settings.FINAL_FRAME_RES)
+        results = tracking.recognise(yolo_model_path, proc_frame)
+        labls_cords = get_boxes(results, raw_frame)
+        new_cars = check_numbers_overlaps(labls_cords)
+        cars = []
 
         for car in new_cars:
+            plate_coords = car[0]
+            car_coords = car[1]
 
-            plate_coords = car[0]  ### Координаты номерного знака ###
-            car_coords = car[1]  ### Координаты автомобиля ###
-
-            if check_roi(plate_coords):  ### Проверяем нахождение номера в области интереса ###
-                x1_car, y1_car = car_coords[0], car_coords[1]
-                x2_car, y2_car = car_coords[2], car_coords[3]
-
-                ## Определяем цвет автомобиля ##
+            if check_roi(plate_coords):
+                x1_car, y1_car, x2_car, y2_car = *car_coords[0:2], *car_coords[2:4]
                 car_box_image = raw_frame[y1_car:y2_car, x1_car:x2_car]
                 colour = detect_color(car_box_image)
-
                 car[1] = [car_coords, colour]
 
-                x1_plate, y1_plate = plate_coords[0], plate_coords[1]
-                x2_plate, y2_plate = plate_coords[2], plate_coords[3]
-
-                ## Определяем номер на номерном знаке ##
+                x1_plate, y1_plate, x2_plate, y2_plate = *plate_coords[0:2], *plate_coords[2:4]
                 plate_box_image = raw_frame[y1_plate:y2_plate, x1_plate:x2_plate]
 
-                # Проверка разрешения изображения номерного знака (минимум 130x30)
                 plate_height, plate_width = plate_box_image.shape[:2]
                 if plate_height >= 20 and plate_width >= 80:
-                    k = k + 1
+                    k += 1
                     output_path = f'save_image/plate_box_image{k}.png'
                     cv2.imwrite(output_path, plate_box_image)
 
-                    plate_text = recognition_character_level(plate_box_image)  # Распознаем номер
-                    # Здесь можно добавить дополнительные проверки или действия после распознавания
+                    plate_text = recognition_character_level(plate_box_image)
                 else:
-                    print(f"Пропущено изображение номерного знака с размерами: {plate_width}x{plate_height}")
+                    print(f"Пропущено изображение номерного знака: {plate_width}x{plate_height}")
                     break
 
-                ## Проверяем соответствует ли номер российскому формату ##
-                if (
-                        not re.match("[A-Z]{1}[0-9]{3}[A-Z]{2}[0-9]{2,3}", plate_text)
-                            is None):
+                if re.match(r"[A-Z]{1}[0-9]{3}[A-Z]{2}[0-9]{2,3}", plate_text):
                     car[0] = [plate_coords, plate_text]
-                    car.append("OK")  ### Номер успешно распознан ###
-
-                    ## Добавляем запись в базу данных ##
-                    ## db_entry может быть вызван здесь или позже ##
-
+                    car.append("OK")
                 else:
                     car[0] = [plate_coords, plate_text]
-                    car.append("NOK")  ### Номер не распознан корректно ###
+                    car.append("NOK")
 
                 cars.append(car)
 
         for car in cars:
-            if car[0][1] != last_number and car[3] == "OK":  ### Если номер изменился и он успешно распознан ###
-                db_entry(str(datetime.now().strftime('%Y-%m-%d %H:%M:%S')), car[0][1], car[1][1], car[2])
+            if car[0][1] != last_number and car[3] == "OK":
+                plate_img = raw_frame[
+                    car[0][0][1]:car[0][0][3],
+                    car[0][0][0]:car[0][0][2]
+                ]
+                car_img = raw_frame[
+                    car[1][0][1]:car[1][0][3],
+                    car[1][0][0]:car[1][0][2]
+                ]
+                db_entry(
+                    time_detected=str(datetime.now().strftime('%Y-%m-%d %H:%M:%S')),
+                    lic_number=car[0][1],
+                    color=car[1][1],
+                    type_auto=car[2],
+                    img_plate=plate_img,
+                    img_car=car_img
+                )
                 last_number = car[0][1]
 
-        drawn_frame = plot_boxes(cars, raw_frame)  ### Отрисовываем рамки вокруг обнаруженных объектов ###
+        drawn_frame = plot_boxes(cars, raw_frame)
         proc_frame = preprocess(drawn_frame, settings.FINAL_FRAME_RES)
 
-        cv2.imshow("video", proc_frame)  ### Показываем обработанный кадр на экране ###
+        cv2.imshow("video", proc_frame)
 
-        ## Ожидание нажатия клавиши 's' или 'q' ##
         if cv2.waitKey(30) & 0xFF == ord("s"):
             time.sleep(5)
 
         if cv2.waitKey(30) & 0xFF == ord("q"):
-            break  ## Выход из цикла при нажатии 'q' ##
+            break
+
 
 
 def detectSource(
@@ -374,8 +345,12 @@ def detectSource(
 
     last_number = ""
     k = 1
-
+    frame_skip = settings.FPS_detect
+    frame_count = 0
     while True:
+        frame_count += 1
+        if frame_count % frame_skip != 0:
+            continue
         ret, raw_frame = cap.read()
         if not ret:
             print("Ошибка: Кадр не считался.")
