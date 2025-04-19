@@ -10,6 +10,8 @@ FILE_PATH = os.environ.get(
     'file_path', 
     os.path.normpath("data/video_test/test_Blog.h264")
 )
+video_source_path = "rtsp://admin:@Dmin2211212@192.168.222.198/stream1"
+
 #Путь к модели YOLO
 YOLO_MODEL_PATH = os.environ.get(
     'yolo_model', 
@@ -28,9 +30,9 @@ LPR_MAX_LEN = 9
 LPR_DROPOUT = 0
 
 #Размер окна, выводимого на экран
-FINAL_FRAME_RES = (1080, 720)
+FINAL_FRAME_RES = (1920, 1080)
 #Зона, в которой производится детекция
-DETECTION_AREA = [(0, 0), (1920, 1000)]
+DETECTION_AREA = [(0, 0), (1920, 1080)]
 
 #Путь к локальной базе данных
 database_path='data/database/oko161.db'
@@ -39,7 +41,7 @@ database_path='data/database/oko161.db'
 name_company_object="BolshoiLog"
 
 #Количество кадров в секунду, которые будет обрабатывать модель
-FPS_detect=25
+FPS_detect=5
 
 #Адрес сервера
 server_url= 'http://localhost:5000/oko161'

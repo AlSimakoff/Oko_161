@@ -1,8 +1,9 @@
 import settings
-from detect import detect
+from detect import detect, detectSource
 import db
 
 def main(video_file_path,
+         video_source_path,
          yolo_model_path,
          yolo_conf,
          yolo_iou,
@@ -38,8 +39,18 @@ def main(video_file_path,
     '''
 
     # Запуск функции обнаружения с заданными параметрами
-    detect(
+    '''detect(
         video_file_path,
+        yolo_model_path,
+        yolo_conf,
+        yolo_iou,
+        lpr_model_path,
+        lpr_max_len,
+        lpr_dropout_rate,
+        device
+    )'''
+    detect(
+        video_source_path,
         yolo_model_path,
         yolo_conf,
         yolo_iou,
@@ -53,6 +64,7 @@ if __name__ == "__main__":
     # Запуск основной функции с параметрами из файла настроек
     main(
         settings.FILE_PATH,          # Путь к видеофайлу
+        settings.video_source_path,
         settings.YOLO_MODEL_PATH,   # Путь к модели YOLO
         settings.YOLO_CONF,         # Уровень уверенности для YOLO
         settings.YOLO_IOU,          # Порог IoU для YOLO

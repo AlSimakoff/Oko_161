@@ -13,7 +13,7 @@ import numpy as np
 from colour_detection.detect_color import detect_color
 import db
 import re
-from recognition import  recognition
+from recognition import  recognition_character_level
 
 
 def preprocess(image: np.ndarray, size: tuple) -> np.ndarray:
@@ -255,7 +255,7 @@ def detect(
     )
 
     last_number = ""  ### Переменная для отслеживания последнего распознанного номера ###
-    k=1
+    k=0
     for raw_frame in get_frames(video_file_path):  ### Читаем кадры из видео ###
 
         proc_frame = preprocess(raw_frame, settings.FINAL_FRAME_RES)  ### Препроцессинг кадра ###
@@ -288,8 +288,20 @@ def detect(
 
                 ## Определяем номер на номерном знаке ##
                 plate_box_image = raw_frame[y1_plate:y2_plate, x1_plate:x2_plate]
-                #plate_text = rec_plate(LPRnet, plate_box_image)
-                plate_text = recognition(plate_box_image)
+
+                # Проверка разрешения изображения номерного знака (минимум 130x30)
+                plate_height, plate_width = plate_box_image.shape[:2]
+                if plate_height >= 20 and plate_width >= 80:
+                    k = k + 1
+                    output_path = f'save_image/plate_box_image{k}.png'
+                    cv2.imwrite(output_path, plate_box_image)
+
+                    plate_text = recognition_character_level(plate_box_image)  # Распознаем номер
+                    # Здесь можно добавить дополнительные проверки или действия после распознавания
+                else:
+                    print(f"Пропущено изображение номерного знака с размерами: {plate_width}x{plate_height}")
+                    break
+
                 ## Проверяем соответствует ли номер российскому формату ##
                 if (
                         not re.match("[A-Z]{1}[0-9]{3}[A-Z]{2}[0-9]{2,3}", plate_text)
@@ -389,7 +401,7 @@ def detectSource(
                 x1_plate, y1_plate = plate_coords[0], plate_coords[1]
                 x2_plate, y2_plate = plate_coords[2], plate_coords[3]
                 plate_box_image = raw_frame[y1_plate:y2_plate, x1_plate:x2_plate]
-                plate_text = recognition(plate_box_image)
+                plate_text = recognition_character_level(plate_box_image)
 
                 if re.match("[A-Z]{1}[0-9]{3}[A-Z]{2}[0-9]{2,3}", plate_text):
                     car[0] = [plate_coords, plate_text]

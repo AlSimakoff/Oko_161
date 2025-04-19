@@ -77,6 +77,9 @@ def softmax(x):
     return e_x / e_x.sum(axis=0)
 
 def rec_plate_with_confidence(lprnet, img) -> tuple[str, float]:
+    """
+    Получает распознанный номер и среднюю уверенность по символам
+    """
     image = cv2.resize(img, (94, 24)).astype("float32")
     image = (image - 127.5) * 0.0078125
     image = np.transpose(image, (2, 0, 1))
